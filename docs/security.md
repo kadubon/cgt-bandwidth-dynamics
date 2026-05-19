@@ -28,7 +28,7 @@ This package is designed for public OSS distribution.
 - `schemas/strict-executable-band-spec.schema.json` documents the stricter
   portable package shape used by `validate --strict`; executable theory checks
   still happen in Python validation, not inside JSON Schema alone.
-- `cgt-bw close --certificate` and `cgt-bw audit --strict-release` emit data
+- `cgt-bw close --certificate` and strict-first `cgt-bw audit` emit data
   certificates only; they do not mutate inputs, files, repositories, or external
   systems.
 - Strict release checking also rejects target rows outside the ambient row

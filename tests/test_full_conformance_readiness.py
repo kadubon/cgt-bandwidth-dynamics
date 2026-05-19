@@ -34,7 +34,6 @@ from cgt_bandwidth.release import (
     ambient_store_enumerator,
     certified_exact_release_certificate,
     raw_release_closure_exact,
-    release_checker_exact,
     release_closure_fixed_point,
     release_graph,
     release_transformation_certificate,
@@ -45,6 +44,7 @@ from cgt_bandwidth.support import (
     read_coordinate_universe,
     read_coordinate_universe_certificate,
     separation_coordinate_objects,
+    support_product_certificate,
     support_signature_certificate,
     support_table_certificate,
 )
@@ -236,7 +236,6 @@ def test_certified_exact_release_and_exact_raw_closure():
     assert ambient_store_enumerator(spec, "H0").to_dict()["passed"] is True
     assert release_graph(spec).to_dict()["edges"][0]["certificate"] == "rel"
     assert release_closure_fixed_point(spec, "H0") == ("H0", "H1")
-    assert release_checker_exact(release) is True
     assert AmbientRowUniverse.for_record(spec, "H0").record_id == "H0"
     assert ("rel",) in {
         item[2] for item in raw_release_closure_exact(spec, "H0", ReportLens("report"))
@@ -370,3 +369,19 @@ def test_debt_certificate_and_coordinate_certificates_cover_portable_outputs():
     )
     with pytest.raises(ValueError, match="exact support enumeration"):
         exact_support_enum(too_many_coords, lens)
+    product_cert = support_product_certificate(too_many_coords, lens).to_dict()
+    assert product_cert["bound_fallback"] is True
+    assert product_cert["fallback_coordinates"] == ["atom:diag:explicit", "row:r"]
+
+
+def test_audit_is_strict_release_first_with_explicit_compat_escape(capsys):
+    assert main(["audit", "examples/minimal_spec.json", "--lens", "report"]) == 0
+    strict_payload = json.loads(capsys.readouterr().out)
+    assert strict_payload["release_mode"] == "strict"
+    assert "support_product_certificate" in strict_payload
+
+    assert (
+        main(["audit", "examples/minimal_spec.json", "--lens", "report", "--compat-release"]) == 0
+    )
+    compat_payload = json.loads(capsys.readouterr().out)
+    assert compat_payload["release_mode"] == "compatibility"

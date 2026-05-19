@@ -18,12 +18,15 @@ The compact APIs remain stable for v0.x: `close_store`, `evidence_closure`,
 `stage_evidence`, `compute_raw_bandwidth`, `compute_debt`,
 `completion_classes`, `support_product`, `exact_support_enum`,
 `release_graph`, and `release_action`.
+Release graph/action APIs are strict-first for scientific conformance. Pass
+explicit compatibility options only in callers that intentionally reproduce
+legacy release behavior.
 
 The certificate APIs are the preferred integration surface for ports and audit
 dashboards: `validate_report`, `close_store_with_certificate`,
 `build_rech_certificate`, `evidence_audit`, `compute_debt_certificate`,
 `support_exact_certificate`, `support_table_certificate`,
-`read_coordinate_universe_certificate`, `completion_certificate`,
+`support_product_certificate`, `read_coordinate_universe_certificate`, `completion_certificate`,
 `completion_law_certificate`, `completion_universal_property_certificate`,
 `check_release`, `certified_exact_release_certificate`,
 `raw_release_closure_exact`, and `release_action_certificate`.

@@ -100,6 +100,9 @@ class SupportCheckerResult:
 class SupportTableCertificate:
     coordinate_universe: tuple[str, ...]
     results: tuple[SupportCheckerResult, ...]
+    bound_fallback: bool = False
+    fallback_coordinates: tuple[str, ...] = ()
+    fallback_reasons: tuple[str, ...] = ()
 
     @property
     def passed(self) -> bool:
@@ -110,6 +113,27 @@ class SupportTableCertificate:
             "coordinate_universe": list(self.coordinate_universe),
             "passed": self.passed,
             "results": [result.to_dict() for result in self.results],
+            "bound_fallback": self.bound_fallback,
+            "fallback_coordinates": list(self.fallback_coordinates),
+            "fallback_reasons": list(self.fallback_reasons),
+        }
+
+
+@dataclass(frozen=True)
+class SupportProductCertificate:
+    product: SupportAntichain
+    coordinate_universe: tuple[str, ...]
+    bound_fallback: bool = False
+    fallback_coordinates: tuple[str, ...] = ()
+    fallback_reasons: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "product": [sorted(edge) for edge in self.product],
+            "coordinate_universe": list(self.coordinate_universe),
+            "bound_fallback": self.bound_fallback,
+            "fallback_coordinates": list(self.fallback_coordinates),
+            "fallback_reasons": list(self.fallback_reasons),
         }
 
 
@@ -242,10 +266,12 @@ def _computes_observable(
     coords: frozenset[str],
     observables: dict[str, Any] | None = None,
     table: dict[str, dict[str, Any]] | None = None,
+    strict_release: bool = True,
 ) -> bool:
     records = spec.audit_universe
     observables = observables or {
-        record.id: bandwidth_observable(spec, lens, record).key() for record in records
+        record.id: bandwidth_observable(spec, lens, record, strict_release=strict_release).key()
+        for record in records
     }
     table = table or _restriction_table(spec, lens)
     for left in records:
@@ -261,11 +287,13 @@ def _computes_observable(
 
 
 def _observable_coordinates(
-    spec: ExecutableBandSpec, lens: ReportLens
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
 ) -> dict[str, dict[str, Any]]:
     values: dict[str, dict[str, Any]] = {}
     for record in spec.audit_universe:
-        observable = bandwidth_observable(spec, lens, record).to_dict()
+        observable = bandwidth_observable(
+            spec, lens, record, strict_release=strict_release
+        ).to_dict()
         flat = {
             "base": observable["base"],
             "release_closure": observable["release_closure"],
@@ -305,9 +333,11 @@ def support_checker_result(
     lens: ReportLens,
     coords: frozenset[str],
     coordinate: str,
+    *,
+    strict_release: bool = True,
 ) -> SupportCheckerResult:
     exec_spec = as_exec_spec(spec)
-    values = _observable_coordinates(exec_spec, lens)
+    values = _observable_coordinates(exec_spec, lens, strict_release=strict_release)
     table = _restriction_table(exec_spec, lens)
     failed_pairs: list[tuple[str, str]] = []
     witness_pairs: list[tuple[str, str]] = []
@@ -354,10 +384,14 @@ def _minimal_supports_for_coordinate(
     coordinate: str,
     values: dict[str, dict[str, Any]],
     table: dict[str, dict[str, Any]],
-) -> SupportAntichain:
+) -> tuple[SupportAntichain, tuple[str, ...]]:
     coords = read_coordinate_universe(spec, lens)
     if len(coords) > spec.exact_support_limit:
-        return (frozenset(coords),)
+        return (frozenset(coords),), (
+            f"{coordinate}: coordinate universe size {len(coords)} exceeds "
+            f"exact_support_limit {spec.exact_support_limit}; using full-coordinate "
+            "sound fallback",
+        )
     found: set[frozenset[str]] = set()
     for size in range(len(coords) + 1):
         for combo in combinations(coords, size):
@@ -366,10 +400,12 @@ def _minimal_supports_for_coordinate(
                 continue
             if _supports_coordinate(spec, lens, candidate, coordinate, values, table):
                 found.add(candidate)
-    return min_supp(found)
+    return min_supp(found), ()
 
 
-def exact_support_enum(spec: ExecutableBandSpec, lens: ReportLens) -> SupportAntichain:
+def exact_support_enum(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> SupportAntichain:
     exec_spec = as_exec_spec(spec)
     coords = read_coordinate_universe(exec_spec, lens)
     if len(coords) > exec_spec.exact_support_limit:
@@ -379,7 +415,9 @@ def exact_support_enum(spec: ExecutableBandSpec, lens: ReportLens) -> SupportAnt
         )
     computing: set[frozenset[str]] = set()
     observables = {
-        record.id: bandwidth_observable(exec_spec, lens, record).key()
+        record.id: bandwidth_observable(
+            exec_spec, lens, record, strict_release=strict_release
+        ).key()
         for record in exec_spec.audit_universe
     }
     table = _restriction_table(exec_spec, lens)
@@ -388,38 +426,84 @@ def exact_support_enum(spec: ExecutableBandSpec, lens: ReportLens) -> SupportAnt
             candidate = frozenset(combo)
             if any(existing <= candidate for existing in computing):
                 continue
-            if _computes_observable(exec_spec, lens, candidate, observables, table):
+            if _computes_observable(
+                exec_spec,
+                lens,
+                candidate,
+                observables,
+                table,
+                strict_release=strict_release,
+            ):
                 computing.add(candidate)
     return min_supp(computing)
 
 
-def support_product(spec: ExecutableBandSpec, lens: ReportLens) -> SupportAntichain:
+def _support_product_with_fallback(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> tuple[SupportAntichain, tuple[str, ...]]:
     exec_spec = as_exec_spec(spec)
-    values = _observable_coordinates(exec_spec, lens)
+    values = _observable_coordinates(exec_spec, lens, strict_release=strict_release)
     table = _restriction_table(exec_spec, lens)
     coordinates = sorted(next(iter(values.values())).keys()) if values else []
     family: SupportAntichain = (frozenset(),)
+    fallback_reasons: list[str] = []
     for coordinate in coordinates:
-        coord_supports = _minimal_supports_for_coordinate(
+        coord_supports, reasons = _minimal_supports_for_coordinate(
             exec_spec, lens, coordinate, values, table
         )
+        fallback_reasons.extend(reasons)
         unions = {left | right for left in family for right in coord_supports}
         family = min_supp(unions)
+    return family, tuple(fallback_reasons)
+
+
+def support_product(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> SupportAntichain:
+    family, _fallback_reasons = _support_product_with_fallback(
+        spec, lens, strict_release=strict_release
+    )
     return family
 
 
-def support_exact(spec: ExecutableBandSpec, lens: ReportLens) -> bool:
-    return set(support_product(spec, lens)) == set(exact_support_enum(spec, lens))
-
-
-def support_exact_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> SupportExact:
+def support_product_certificate(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> SupportProductCertificate:
     exec_spec = as_exec_spec(spec)
-    product = support_product(exec_spec, lens)
-    exact = exact_support_enum(exec_spec, lens)
+    product, fallback_reasons = _support_product_with_fallback(
+        exec_spec, lens, strict_release=strict_release
+    )
+    return SupportProductCertificate(
+        product=product,
+        coordinate_universe=read_coordinate_universe(exec_spec, lens),
+        bound_fallback=bool(fallback_reasons),
+        fallback_coordinates=tuple(sorted({coord for edge in product for coord in edge}))
+        if fallback_reasons
+        else (),
+        fallback_reasons=fallback_reasons,
+    )
+
+
+def support_exact(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> bool:
+    return set(support_product(spec, lens, strict_release=strict_release)) == set(
+        exact_support_enum(spec, lens, strict_release=strict_release)
+    )
+
+
+def support_exact_certificate(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> SupportExact:
+    exec_spec = as_exec_spec(spec)
+    product = support_product(exec_spec, lens, strict_release=strict_release)
+    exact = exact_support_enum(exec_spec, lens, strict_release=strict_release)
     product_set = set(product)
     exact_set = set(exact)
     observables = {
-        record.id: bandwidth_observable(exec_spec, lens, record).key()
+        record.id: bandwidth_observable(
+            exec_spec, lens, record, strict_release=strict_release
+        ).key()
         for record in exec_spec.audit_universe
     }
     separating_pairs: set[tuple[str, str]] = set()
@@ -438,12 +522,14 @@ def support_exact_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> Sup
                         "observable_differs": True,
                     }
                 )
-    observable_coords = _observable_coordinates(exec_spec, lens)
+    observable_coords = _observable_coordinates(exec_spec, lens, strict_release=strict_release)
     minimality_witnesses: list[dict[str, object]] = []
     failed_pairs: set[tuple[str, str]] = set()
     for edge in exact:
         for coordinate in sorted(next(iter(observable_coords.values())).keys()):
-            result = support_checker_result(exec_spec, lens, edge, coordinate)
+            result = support_checker_result(
+                exec_spec, lens, edge, coordinate, strict_release=strict_release
+            )
             failed_pairs.update(result.failed_pairs)
             if result.minimality_witness:
                 minimality_witnesses.append(
@@ -472,45 +558,78 @@ def support_exact_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> Sup
 
 
 def support_table_certificate(
-    spec: ExecutableBandSpec, lens: ReportLens, *, exact: bool = False
+    spec: ExecutableBandSpec,
+    lens: ReportLens,
+    *,
+    exact: bool = False,
+    strict_release: bool = True,
 ) -> SupportTableCertificate:
     exec_spec = as_exec_spec(spec)
-    supports = exact_support_enum(exec_spec, lens) if exact else support_product(exec_spec, lens)
-    values = _observable_coordinates(exec_spec, lens)
+    fallback_reasons: tuple[str, ...] = ()
+    if exact:
+        supports = exact_support_enum(exec_spec, lens, strict_release=strict_release)
+    else:
+        supports, fallback_reasons = _support_product_with_fallback(
+            exec_spec, lens, strict_release=strict_release
+        )
+    values = _observable_coordinates(exec_spec, lens, strict_release=strict_release)
     coordinates = tuple(sorted(next(iter(values.values())).keys())) if values else ()
     results = tuple(
-        support_checker_result(exec_spec, lens, support, coordinate)
+        support_checker_result(exec_spec, lens, support, coordinate, strict_release=strict_release)
         for support in supports
         for coordinate in coordinates
     )
     return SupportTableCertificate(
         coordinate_universe=read_coordinate_universe(exec_spec, lens),
         results=results,
+        bound_fallback=bool(fallback_reasons),
+        fallback_coordinates=tuple(sorted({coord for edge in supports for coord in edge}))
+        if fallback_reasons
+        else (),
+        fallback_reasons=fallback_reasons,
     )
 
 
 def support_signature(
-    spec: ExecutableBandSpec, lens: ReportLens, record_id: str, exact: bool = False
+    spec: ExecutableBandSpec,
+    lens: ReportLens,
+    record_id: str,
+    exact: bool = False,
+    *,
+    strict_release: bool = True,
 ) -> Any:
-    family = exact_support_enum(spec, lens) if exact else support_product(spec, lens)
+    family = (
+        exact_support_enum(spec, lens, strict_release=strict_release)
+        if exact
+        else support_product(spec, lens, strict_release=strict_release)
+    )
     return tuple(
         (tuple(sorted(edge)), thaw_value(_restriction(spec, record_id, edge))) for edge in family
     )
 
 
 def support_signature_certificate(
-    spec: ExecutableBandSpec, lens: ReportLens, record_id: str, exact: bool = False
+    spec: ExecutableBandSpec,
+    lens: ReportLens,
+    record_id: str,
+    exact: bool = False,
+    *,
+    strict_release: bool = True,
 ) -> SuppSig:
     entries = tuple(
         (tuple(edge), freeze_value(value))
-        for edge, value in support_signature(spec, lens, record_id, exact=exact)
+        for edge, value in support_signature(
+            spec, lens, record_id, exact=exact, strict_release=strict_release
+        )
     )
     return SuppSig(record_id=str(record_id), exact=exact, entries=entries)
 
 
-def separation_coordinates(spec: ExecutableBandSpec, lens: ReportLens) -> tuple[str, ...]:
+def separation_coordinates(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> tuple[str, ...]:
     exec_spec = as_exec_spec(spec)
-    exact = exact_support_enum(exec_spec, lens)
+    exact = exact_support_enum(exec_spec, lens, strict_release=strict_release)
     coords: set[str] = set()
     for edge in exact:
         for coord in edge:
@@ -518,12 +637,21 @@ def separation_coordinates(spec: ExecutableBandSpec, lens: ReportLens) -> tuple[
                 frozenset(item for item in candidate if item != coord) for candidate in exact
             }
             observables = {
-                record.id: bandwidth_observable(exec_spec, lens, record).key()
+                record.id: bandwidth_observable(
+                    exec_spec, lens, record, strict_release=strict_release
+                ).key()
                 for record in exec_spec.audit_universe
             }
             table = _restriction_table(exec_spec, lens)
             if not all(
-                _computes_observable(exec_spec, lens, reduced, observables, table)
+                _computes_observable(
+                    exec_spec,
+                    lens,
+                    reduced,
+                    observables,
+                    table,
+                    strict_release=strict_release,
+                )
                 for reduced in reduced_edges
             ):
                 coords.add(coord)
@@ -531,6 +659,9 @@ def separation_coordinates(spec: ExecutableBandSpec, lens: ReportLens) -> tuple[
 
 
 def separation_coordinate_objects(
-    spec: ExecutableBandSpec, lens: ReportLens
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
 ) -> tuple[SepCoord, ...]:
-    return tuple(SepCoord(label) for label in separation_coordinates(spec, lens))
+    return tuple(
+        SepCoord(label)
+        for label in separation_coordinates(spec, lens, strict_release=strict_release)
+    )

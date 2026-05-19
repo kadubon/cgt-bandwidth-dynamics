@@ -199,7 +199,11 @@ def base_observable(spec: ExecutableBandSpec, lens: ReportLens, record: str | Fi
 
 
 def bandwidth_observable(
-    spec: ExecutableBandSpec, lens: ReportLens, record: str | FiniteRecord
+    spec: ExecutableBandSpec,
+    lens: ReportLens,
+    record: str | FiniteRecord,
+    *,
+    strict_release: bool = True,
 ) -> BWObservable:
     exec_spec = as_exec_spec(spec)
     from .release import action_signature, raw_release_closure
@@ -207,6 +211,6 @@ def bandwidth_observable(
     rec = exec_spec.record(record)
     return BWObservable(
         base=base_observable(exec_spec, lens, rec),
-        release_closure=raw_release_closure(exec_spec, rec, lens),
-        action_signature=action_signature(exec_spec, rec, lens),
+        release_closure=raw_release_closure(exec_spec, rec, lens, strict=strict_release),
+        action_signature=action_signature(exec_spec, rec, lens, strict=strict_release),
     )

@@ -642,12 +642,12 @@ def certified_exact_release_certificate(
     )
 
 
-def release_graph(spec: ExecutableBandSpec) -> ReleaseGraph:
+def release_graph(spec: ExecutableBandSpec, *, strict: bool = True) -> ReleaseGraph:
     exec_spec = as_exec_spec(spec)
     edges = frozenset(
         (cert.source, cert.target, cert.id)
         for cert in exec_spec.releases
-        if cert.accepted and check_release(exec_spec, cert).passed
+        if cert.accepted and check_release(exec_spec, cert, strict=strict).passed
     )
     return ReleaseGraph(edges=edges)
 
@@ -659,14 +659,20 @@ def _band_row_reading(spec: ExecutableBandSpec, record: FiniteRecord) -> Any:
 
 
 def action_signature(
-    spec: ExecutableBandSpec, record: str | FiniteRecord, lens: ReportLens
+    spec: ExecutableBandSpec,
+    record: str | FiniteRecord,
+    lens: ReportLens,
+    *,
+    strict: bool = True,
 ) -> tuple[Any, ...]:
     exec_spec = as_exec_spec(spec)
     rec = exec_spec.record(record)
     signatures: list[Any] = []
     for cert in sorted(exec_spec.releases, key=lambda c: c.id):
-        check = check_release(exec_spec, cert)
+        check = check_release(exec_spec, cert, strict=strict)
         if cert.source != rec.id or not cert.accepted or not check.passed:
+            continue
+        if cert.target == rec.id and cert.signature.get("kind") == "identity":
             continue
         target = exec_spec.record(cert.target)
         source_store = close_store(exec_spec, rec)
@@ -694,13 +700,17 @@ def _outgoing_congruence_signatures(
     spec: ExecutableBandSpec,
     record: str | FiniteRecord,
     lens: ReportLens,
+    *,
+    strict: bool = True,
 ) -> tuple[Any, ...]:
     exec_spec = as_exec_spec(spec)
     rec = exec_spec.record(record)
     signatures: list[Any] = []
     for cert in sorted(exec_spec.releases, key=lambda item: item.id):
-        check = check_release(exec_spec, cert)
+        check = check_release(exec_spec, cert, strict=strict)
         if cert.source != rec.id or not cert.accepted or not check.passed:
+            continue
+        if cert.target == rec.id and cert.signature.get("kind") == "identity":
             continue
         target = exec_spec.record(cert.target)
         source_store = close_store(exec_spec, rec)
@@ -720,19 +730,26 @@ def _one_step_release_bisim_holds(
     spec: ExecutableBandSpec,
     lens: ReportLens,
     source_class: tuple[str, ...],
+    *,
+    strict: bool = True,
 ) -> bool:
     signatures = [
-        _outgoing_congruence_signatures(spec, record_id, lens) for record_id in source_class
+        _outgoing_congruence_signatures(spec, record_id, lens, strict=strict)
+        for record_id in source_class
     ]
     return all(signature == signatures[0] for signature in signatures[1:])
 
 
 def raw_release_closure(
-    spec: ExecutableBandSpec, record: str | FiniteRecord, lens: ReportLens
+    spec: ExecutableBandSpec,
+    record: str | FiniteRecord,
+    lens: ReportLens,
+    *,
+    strict: bool = True,
 ) -> tuple[Any, ...]:
     exec_spec = as_exec_spec(spec)
     rec = exec_spec.record(record)
-    graph = release_graph(exec_spec)
+    graph = release_graph(exec_spec, strict=strict)
     cert_by_id = {cert.id: cert for cert in exec_spec.releases}
     queue: deque[tuple[str, tuple[str, ...]]] = deque([(rec.id, ())])
     seen_states: set[tuple[str, tuple[str, ...]]] = set()
@@ -819,12 +836,12 @@ def raw_release_closure_exact(
 
 
 def release_action_certificate(
-    spec: ExecutableBandSpec, lens: ReportLens, strict: bool = False
+    spec: ExecutableBandSpec, lens: ReportLens, strict: bool = True
 ) -> ReleaseActionCertificate:
     exec_spec = as_exec_spec(spec)
     from .completion import completion_classes
 
-    completion = completion_classes(exec_spec, lens)
+    completion = completion_classes(exec_spec, lens, strict_release=strict)
     relation: dict[tuple[str, ...], set[tuple[str, ...]]] = defaultdict(set)
     accepted: list[str] = []
     skipped: dict[str, tuple[str, ...]] = {}
@@ -848,15 +865,16 @@ def release_action_certificate(
             continue
         source_class = completion.class_of(cert.source)
         support_signatures = {
-            record_id: support_signature(exec_spec, lens, record_id) for record_id in source_class
+            record_id: support_signature(exec_spec, lens, record_id, strict_release=strict)
+            for record_id in source_class
         }
         certificate_congruence = (
             len({freeze_value(value) for value in support_signatures.values()}) <= 1
         )
-        one_step = _one_step_release_bisim_holds(exec_spec, lens, source_class)
+        one_step = _one_step_release_bisim_holds(exec_spec, lens, source_class, strict=strict)
         target_class = completion.class_of(cert.target)
         outgoing_witness = {
-            record_id: _outgoing_congruence_signatures(exec_spec, record_id, lens)
+            record_id: _outgoing_congruence_signatures(exec_spec, record_id, lens, strict=strict)
             for record_id in source_class
         }
         predicate_witnesses: list[ReleasePredicateWitness] = []
@@ -872,9 +890,11 @@ def release_action_certificate(
                     )
                 )
         congruence_pairs: list[ReleaseCongruencePair] = []
-        source_signature = freeze_value(support_signature(exec_spec, lens, cert.source))
+        source_signature = freeze_value(
+            support_signature(exec_spec, lens, cert.source, strict_release=strict)
+        )
         source_footprint = freeze_value(
-            _outgoing_congruence_signatures(exec_spec, cert.source, lens)
+            _outgoing_congruence_signatures(exec_spec, cert.source, lens, strict=strict)
         )
         for peer in exec_spec.releases:
             peer_check = checks.get(peer.id) or check_release(exec_spec, peer, strict=strict)
@@ -888,9 +908,11 @@ def release_action_certificate(
                 continue
             if peer_source_class != source_class:
                 continue
-            peer_signature = freeze_value(support_signature(exec_spec, lens, peer.source))
+            peer_signature = freeze_value(
+                support_signature(exec_spec, lens, peer.source, strict_release=strict)
+            )
             peer_footprint = freeze_value(
-                _outgoing_congruence_signatures(exec_spec, peer.source, lens)
+                _outgoing_congruence_signatures(exec_spec, peer.source, lens, strict=strict)
             )
             congruence_pairs.append(
                 ReleaseCongruencePair(
@@ -902,7 +924,9 @@ def release_action_certificate(
                     footprint_signature_equal=source_footprint == peer_footprint,
                     target_class_equal=target_class == peer_target_class,
                     one_step_bisimulation=one_step
-                    and _one_step_release_bisim_holds(exec_spec, lens, peer_source_class),
+                    and _one_step_release_bisim_holds(
+                        exec_spec, lens, peer_source_class, strict=strict
+                    ),
                 )
             )
         proof = ReleaseDescentProof(
@@ -915,7 +939,9 @@ def release_action_certificate(
             certificate_id=cert.id,
             source_class=source_class,
             target_class=target_class,
-            support_signature=support_signature(exec_spec, lens, cert.source),
+            support_signature=support_signature(
+                exec_spec, lens, cert.source, strict_release=strict
+            ),
             local_stability=cert.local_stability,
             certificate_congruence=certificate_congruence,
             one_step_bisimulation=one_step,
@@ -954,13 +980,15 @@ def release_action_certificate(
 
 
 def release_action(
-    spec: ExecutableBandSpec, lens: ReportLens
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict: bool = True
 ) -> dict[tuple[str, ...], tuple[tuple[str, ...], ...]]:
-    return dict(release_action_certificate(spec, lens).relation)
+    return dict(release_action_certificate(spec, lens, strict=strict).relation)
 
 
-def release_closure_fixed_point(spec: ExecutableBandSpec, start: str) -> tuple[str, ...]:
-    graph = release_graph(spec)
+def release_closure_fixed_point(
+    spec: ExecutableBandSpec, start: str, *, strict: bool = True
+) -> tuple[str, ...]:
+    graph = release_graph(spec, strict=strict)
     reached = {start}
     changed = True
     while changed:
@@ -972,7 +1000,7 @@ def release_closure_fixed_point(spec: ExecutableBandSpec, start: str) -> tuple[s
     return tuple(sorted(reached))
 
 
-def release_checker_exact(cert: ReleaseCertificate) -> bool:
+def _legacy_release_certificate_exact(cert: ReleaseCertificate) -> bool:
     return (
         cert.exact
         and cert.no_new_rows

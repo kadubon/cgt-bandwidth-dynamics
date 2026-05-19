@@ -94,9 +94,11 @@ Release certificates are finite records, not cancellation commands. The checker 
 `release_action_certificate` records accepted certificates, skipped
 certificates, checker traces, descent certificates, support signatures, and the
 descended completion-class relation.
-Use `cgt-bw audit spec.json --strict-release` when release descent should fail
-unless the finite footprint predicate table and local-stability declarations are
-explicit.
+Audit release handling is strict-first. `cgt-bw audit spec.json` uses strict
+release conformance and fails release descent unless the finite footprint
+predicate table, proof maps, checker trace, and local-stability declarations are
+explicit. Use `cgt-bw audit spec.json --compat-release` only when replaying
+legacy fixtures that intentionally rely on compatibility release checks.
 Strict release certificates also include ambient row-universe checks and
 `ReleaseDescentProof`, which enumerates predicate witnesses and same-source-class
 congruent release-pair checks before descending to completion classes. Missing

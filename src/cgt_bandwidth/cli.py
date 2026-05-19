@@ -23,6 +23,7 @@ from .support import (
     support_exact,
     support_exact_certificate,
     support_product,
+    support_product_certificate,
     support_signature,
     support_table_certificate,
 )
@@ -85,36 +86,55 @@ def _cmd_close(args: argparse.Namespace) -> int:
 def _cmd_audit(args: argparse.Namespace) -> int:
     spec = load_spec(args.spec)
     lens = report_lens_from_name(args.lens)
+    strict_release = not args.compat_release
     records = {
-        record.id: bandwidth_observable(spec, lens, record).to_dict()
+        record.id: bandwidth_observable(spec, lens, record, strict_release=strict_release).to_dict()
         for record in spec.audit_universe
     }
-    release_certificate = release_action_certificate(spec, lens, strict=args.strict_release)
+    release_certificate = release_action_certificate(spec, lens, strict=strict_release)
     payload = {
         "schema_version": "cgt-bandwidth.audit.v1",
+        "release_mode": "strict" if strict_release else "compatibility",
         "records": records,
-        "completion": completion_classes(spec, lens).to_dict(),
-        "completion_certificate": completion_certificate(spec, lens).to_dict(),
-        "completion_law_certificate": completion_law_certificate(spec, lens).to_dict(),
-        "support_product": [sorted(edge) for edge in support_product(spec, lens)],
-        "support_exact": support_exact(spec, lens) if args.exact_support else None,
-        "separation_coordinates": separation_coordinates(spec, lens)
+        "completion": completion_classes(spec, lens, strict_release=strict_release).to_dict(),
+        "completion_certificate": completion_certificate(
+            spec, lens, strict_release=strict_release
+        ).to_dict(),
+        "completion_law_certificate": completion_law_certificate(
+            spec, lens, strict_release=strict_release
+        ).to_dict(),
+        "support_product": [
+            sorted(edge) for edge in support_product(spec, lens, strict_release=strict_release)
+        ],
+        "support_product_certificate": support_product_certificate(
+            spec, lens, strict_release=strict_release
+        ).to_dict(),
+        "support_exact": support_exact(spec, lens, strict_release=strict_release)
         if args.exact_support
         else None,
-        "release_graph": release_graph(spec).to_dict(),
+        "separation_coordinates": separation_coordinates(spec, lens, strict_release=strict_release)
+        if args.exact_support
+        else None,
+        "release_graph": release_graph(spec, strict=strict_release).to_dict(),
         "release_action": {
             str(k): [list(v) for v in vals] for k, vals in release_certificate.relation.items()
         },
         "release_action_certificate": release_certificate.to_dict(),
     }
     if args.exact_support:
-        payload["exact_support"] = [sorted(edge) for edge in exact_support_enum(spec, lens)]
-        payload["support_exact_certificate"] = support_exact_certificate(spec, lens).to_dict()
+        payload["exact_support"] = [
+            sorted(edge) for edge in exact_support_enum(spec, lens, strict_release=strict_release)
+        ]
+        payload["support_exact_certificate"] = support_exact_certificate(
+            spec, lens, strict_release=strict_release
+        ).to_dict()
         payload["support_table_certificate"] = support_table_certificate(
-            spec, lens, exact=True
+            spec, lens, exact=True, strict_release=strict_release
         ).to_dict()
         payload["support_signatures"] = {
-            record.id: support_signature(spec, lens, record.id, exact=True)
+            record.id: support_signature(
+                spec, lens, record.id, exact=True, strict_release=strict_release
+            )
             for record in spec.audit_universe
         }
     print(dump_json(payload))
@@ -171,7 +191,11 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("spec")
     audit.add_argument("--lens", default="report")
     audit.add_argument("--exact-support", action="store_true")
-    audit.add_argument("--strict-release", action="store_true")
+    audit.add_argument(
+        "--compat-release",
+        action="store_true",
+        help="use legacy compatibility release checks instead of strict release conformance",
+    )
     audit.set_defaults(func=_cmd_audit)
 
     micro = sub.add_parser("microframe", help="run deterministic microframe utilities")

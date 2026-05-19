@@ -1,0 +1,117 @@
+{
+  "schema_version": "cgt-bandwidth.conformance-matrix.v1",
+  "scope": {
+    "release": "v0.1.0",
+    "finite_audit_universe_only": true,
+    "strict_mode_default_for_scientific_conformance": true,
+    "out_of_scope": [
+      "infinite-domain completeness",
+      "external abstraction proof pi: Sys -> AuditUniv",
+      "proof assistant certification"
+    ]
+  },
+  "interfaces": {
+    "repository": "kadubon/cgt-bandwidth-dynamics",
+    "distribution_package": "cgt-bandwidth",
+    "import_package": "cgt_bandwidth",
+    "cli": "cgt-bw"
+  },
+  "obligations": [
+    {
+      "id": "WF01-WF13",
+      "name": "finite executable well-formedness",
+      "status": "implemented",
+      "strict_surface": "ExecutableBandSpec.validate_report(strict=True)",
+      "certificate": "WellFormednessReport",
+      "schema": "schemas/wellformedness-report.schema.json"
+    },
+    {
+      "id": "MODE-TABLE",
+      "name": "explicit finite mode table",
+      "status": "implemented",
+      "strict_surface": "ModeTableCertificate",
+      "certificate": "mode_table_certificate()",
+      "schema": "schemas/strict-executable-band-spec.schema.json"
+    },
+    {
+      "id": "CLOSURE",
+      "name": "bounded closure with retained failures and RuleTab traces",
+      "status": "implemented",
+      "strict_surface": "close_store_with_certificate(strict=True)",
+      "certificate": "ClosureCertificate",
+      "schema": "schemas/closure-certificate.schema.json"
+    },
+    {
+      "id": "RECH",
+      "name": "residual effect certificate hypergraph",
+      "status": "implemented",
+      "strict_surface": "build_rech_certificate()",
+      "certificate": "RECHCertificate",
+      "schema": "schemas/rech-certificate.schema.json"
+    },
+    {
+      "id": "EVIDENCE",
+      "name": "mode-stratified provenance-sensitive evidence closure",
+      "status": "implemented",
+      "strict_surface": "evidence_audit(strict=True)",
+      "certificate": "EvidenceAudit",
+      "schema": "schemas/evidence-audit.schema.json"
+    },
+    {
+      "id": "COMPONENTS",
+      "name": "finite component evaluators and law checks",
+      "status": "implemented",
+      "strict_surface": "component_law_certificate(strict=True)",
+      "certificate": "ComponentLawCertificate",
+      "schema": "schemas/component-law-certificate.schema.json"
+    },
+    {
+      "id": "SUPPORT",
+      "name": "support product, exact support, and bound fallback certificate",
+      "status": "implemented",
+      "strict_surface": "support_product_certificate(), support_table_certificate()",
+      "certificate": "SupportProductCertificate / SupportTableCertificate",
+      "schema": "schemas/support-certificate.schema.json"
+    },
+    {
+      "id": "COMPLETION",
+      "name": "bandwidth completion and universal-property witness",
+      "status": "implemented",
+      "strict_surface": "completion_certificate(), completion_universal_property_certificate()",
+      "certificate": "CompletionCertificate",
+      "schema": "schemas/completion-certificate.schema.json"
+    },
+    {
+      "id": "RELEASE-CHECK",
+      "name": "strict release checker over footprint predicate tables",
+      "status": "implemented",
+      "strict_surface": "check_release(strict=True)",
+      "certificate": "ReleaseCheckResult",
+      "schema": "schemas/release-check.schema.json"
+    },
+    {
+      "id": "RELEASE-DESCENT",
+      "name": "release action descent to completion classes",
+      "status": "implemented",
+      "strict_surface": "release_action_certificate(strict=True)",
+      "certificate": "ReleaseActionCertificate / ReleaseDescentProof",
+      "schema": "schemas/release-descent-certificate.schema.json"
+    },
+    {
+      "id": "AUDIT-CLI",
+      "name": "strict-first audit output",
+      "status": "implemented",
+      "strict_surface": "cgt-bw audit spec.json",
+      "compatibility_escape": "cgt-bw audit spec.json --compat-release",
+      "certificate": "audit report",
+      "schema": "schemas/audit-report.schema.json"
+    },
+    {
+      "id": "RELEASE-COVER",
+      "name": "pure release-cover synthesis",
+      "status": "implemented",
+      "strict_surface": "cgt-bw release-cover instance.json --exact",
+      "certificate": "deterministic chosen set output"
+    }
+  ]
+}

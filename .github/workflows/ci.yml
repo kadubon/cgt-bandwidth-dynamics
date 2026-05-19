@@ -66,6 +66,10 @@ jobs:
               if path.name == "release_cover.json":
                   continue
               jsonschema.validate(json.loads(path.read_text()), spec_schema)
+          jsonschema.validate(
+              json.loads(Path("docs/conformance-matrix.json").read_text()),
+              json.loads(Path("schemas/conformance-matrix.schema.json").read_text()),
+          )
           strict_schema = json.loads(Path("schemas/strict-executable-band-spec.schema.json").read_text())
           jsonschema.validate(json.loads(Path("examples/strict_minimal_spec.json").read_text()), strict_schema)
 
@@ -162,6 +166,7 @@ jobs:
           uv run python -m cgt_bandwidth.cli close examples/minimal_spec.json H0 --certificate
           uv run python -m cgt_bandwidth.cli close examples/strict_minimal_spec.json H0 --certificate --strict
           uv run python -m cgt_bandwidth.cli audit examples/minimal_spec.json --lens report --exact-support
+          uv run python -m cgt_bandwidth.cli audit examples/minimal_spec.json --lens report --exact-support --compat-release
           uv run python -m cgt_bandwidth.cli microframe run
           uv run python -m cgt_bandwidth.cli release-cover examples/release_cover.json --exact
 

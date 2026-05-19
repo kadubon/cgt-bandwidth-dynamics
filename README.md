@@ -40,6 +40,17 @@ universe.
 The runtime core uses only the Python standard library. Development and CI use
 `uv`, `pytest`, `ruff`, `mypy`, and `twine`.
 
+## Names At A Glance
+
+| Surface | Name |
+| --- | --- |
+| GitHub repository | `kadubon/cgt-bandwidth-dynamics` |
+| Python package distribution | `cgt-bandwidth` |
+| Python import package | `cgt_bandwidth` |
+| CLI command | `cgt-bw` |
+| Main library object | `ExecutableBandSpec` |
+| Scientific conformance path | strict finite package + certificate APIs |
+
 ## What To Expect
 
 Use this project when you want to answer finite questions such as:
@@ -73,7 +84,7 @@ uv run cgt-bw validate examples/strict_minimal_spec.json --report --strict
 uv run cgt-bw close examples/minimal_spec.json H0 --certificate
 uv run cgt-bw close examples/strict_minimal_spec.json H0 --certificate --strict
 uv run cgt-bw audit examples/minimal_spec.json --lens report --exact-support
-uv run cgt-bw audit examples/minimal_spec.json --lens report --exact-support --strict-release
+uv run cgt-bw audit examples/minimal_spec.json --lens report --exact-support --compat-release
 ```
 
 Run the release-cover core:
@@ -119,6 +130,9 @@ component eval/debt/support tables, and undeclared release proof traces.
 Strict specs must either declare every finite `mode_matrix` pair explicitly or
 be expanded with `cgt-bw normalize-strict`; compact defaults are a compatibility
 feature, not the theorem-aligned path.
+Strict mode is default for scientific conformance. Compatibility mode remains
+available for legacy examples and migration, and release compatibility is
+available in the audit CLI only through `--compat-release`.
 
 ## Data Format Notes
 
@@ -139,6 +153,7 @@ See:
 - `docs/security.md`
 - `docs/porting.md`
 - `docs/api-stability.md`
+- `docs/conformance-matrix.json`
 - `SECURITY.md`
 - `CONTRIBUTING.md`
 - `CHANGELOG.md`
@@ -161,6 +176,10 @@ Machine-readable schemas are published under `schemas/`:
 - `schemas/release-check.schema.json` for release checker output.
 - `schemas/release-descent-certificate.schema.json` for the
   `release_action_certificate` section of audit output.
+- `schemas/conformance-matrix.schema.json` for
+  `docs/conformance-matrix.json`.
+- `docs/conformance-matrix.json` for a machine-readable map from theory
+  obligations to implementation surfaces and schemas.
 
 Before publishing a local tree, run:
 

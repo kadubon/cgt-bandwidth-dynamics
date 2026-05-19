@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kadubon/cgt-bandwidth-dynamics/schemas/conformance-matrix.schema.json",
+  "title": "CGT Bandwidth Conformance Matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scope", "interfaces", "obligations"],
+  "properties": {
+    "schema_version": {"const": "cgt-bandwidth.conformance-matrix.v1"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "release",
+        "finite_audit_universe_only",
+        "strict_mode_default_for_scientific_conformance",
+        "out_of_scope"
+      ],
+      "properties": {
+        "release": {"type": "string"},
+        "finite_audit_universe_only": {"type": "boolean"},
+        "strict_mode_default_for_scientific_conformance": {"type": "boolean"},
+        "out_of_scope": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "distribution_package", "import_package", "cli"],
+      "properties": {
+        "repository": {"type": "string"},
+        "distribution_package": {"type": "string"},
+        "import_package": {"type": "string"},
+        "cli": {"type": "string"}
+      }
+    },
+    "obligations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "status", "strict_surface"],
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "status": {
+            "type": "string",
+            "enum": ["implemented", "partial", "planned", "out-of-scope"]
+          },
+          "strict_surface": {"type": "string"},
+          "compatibility_escape": {"type": "string"},
+          "certificate": {"type": "string"},
+          "schema": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -7,7 +7,10 @@
   "properties": {
     "coordinate_universe": {"type": "array", "items": {"type": "string"}},
     "passed": {"type": "boolean"},
-    "results": {"type": "array"}
+    "results": {"type": "array"},
+    "bound_fallback": {"type": "boolean"},
+    "fallback_coordinates": {"type": "array", "items": {"type": "string"}},
+    "fallback_reasons": {"type": "array", "items": {"type": "string"}}
   },
   "additionalProperties": false
 }

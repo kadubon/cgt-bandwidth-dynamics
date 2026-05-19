@@ -16,6 +16,7 @@ from .core import (
     RowImplicationRule,
     RowSchema,
     StageCheck,
+    WorkBounds,
 )
 
 
@@ -274,6 +275,7 @@ def build_microframe_spec() -> ExecutableBandSpec:
             target="H0",
             footprint=("o_1", "c_1", "w_1", "rel_1"),
             signature={"kind": "identity"},
+            checker_trace=("release-table:id_H0:pass",),
             local_stability=local_stability,
         ),
         ReleaseCertificate(
@@ -285,9 +287,10 @@ def build_microframe_spec() -> ExecutableBandSpec:
             footprint=("ob_1", "w_1", "rc_1", "p_1", "ret_1"),
             diagnostic_retyping=("ret_1",),
             discharge_map={"ob_1": "rc_1"},
-            preservation_map={"w_1": "p_1"},
-            retyping_map={"ob_1": "ret_1"},
+            preservation_map={"w_1": "p_1", "p_1": "p_1"},
+            retyping_map={"ob_1": "ret_1", "ret_1": "ret_1"},
             signature={"kind": "release", "row": "rc_1"},
+            checker_trace=("release-table:rc_1:pass",),
             local_stability=local_stability,
         ),
         ReleaseCertificate(
@@ -296,6 +299,7 @@ def build_microframe_spec() -> ExecutableBandSpec:
             target="H2",
             footprint=("o_1", "c_1", "c_2", "w_1", "rel_1"),
             signature={"kind": "identity"},
+            checker_trace=("release-table:id_H2:pass",),
             local_stability=local_stability,
         ),
         ReleaseCertificate(
@@ -304,6 +308,7 @@ def build_microframe_spec() -> ExecutableBandSpec:
             target="H4",
             footprint=("o_1", "c_1", "w_1", "rel_1"),
             signature={"kind": "identity"},
+            checker_trace=("release-table:id_H4:pass",),
             local_stability=local_stability,
         ),
         ReleaseCertificate(
@@ -312,9 +317,24 @@ def build_microframe_spec() -> ExecutableBandSpec:
             target="H5",
             footprint=("o_1", "c_1", "w_1", "rel_1", "rig_1"),
             signature={"kind": "identity"},
+            checker_trace=("release-table:id_H5:pass",),
             local_stability=local_stability,
         ),
     )
+    release_predicates = {
+        cert.id: {
+            "obstructionCoverage": True,
+            "lowerBoundSuccessor": True,
+            "noNewRow": True,
+            "noninterference": True,
+            "diagnosticRetyping": True,
+        }
+        for cert in releases
+    }
+    release_coordinates = {cert.id: cert.footprint for cert in releases}
+    predicate_coordinates = {
+        cert.id: {name: cert.footprint for name in release_predicates[cert.id]} for cert in releases
+    }
 
     return ExecutableBandSpec(
         name="deterministic-microframe",
@@ -338,7 +358,11 @@ def build_microframe_spec() -> ExecutableBandSpec:
             obstruction_rows=("ob_1", "rig_1"),
             lower_bound_rows=("lb_1",),
             allowed_new_rows=("rel_1", "rc_1", "p_1", "ret_1"),
+            footprint_predicates=release_predicates,
+            footprint_coordinates=release_coordinates,
+            predicate_coordinates=predicate_coordinates,
         ),
+        work_bounds=WorkBounds(release_checks=65536),
         band_rows=("o_1", "c_1", "w_1", "rel_1"),
         read_coordinates=(
             "o_1",

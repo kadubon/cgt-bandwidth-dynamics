@@ -89,12 +89,16 @@ class CompletionUniversalPropertyCertificate:
         }
 
 
-def completion_classes(spec: ExecutableBandSpec, lens: ReportLens) -> Completion:
+def completion_classes(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> Completion:
     exec_spec = as_exec_spec(spec)
     buckets: dict[Any, list[str]] = defaultdict(list)
     observable_by_record: dict[str, Any] = {}
     for record in exec_spec.audit_universe:
-        observable = bandwidth_observable(exec_spec, lens, record).key()
+        observable = bandwidth_observable(
+            exec_spec, lens, record, strict_release=strict_release
+        ).key()
         observable_by_record[record.id] = observable
         buckets[observable].append(record.id)
     classes = tuple(
@@ -109,8 +113,10 @@ def completion_operator(
     spec: ExecutableBandSpec,
     lens: ReportLens,
     refinement: tuple[tuple[str, ...], ...],
+    *,
+    strict_release: bool = True,
 ) -> tuple[tuple[str, ...], ...]:
-    completion = completion_classes(spec, lens)
+    completion = completion_classes(spec, lens, strict_release=strict_release)
     completed: list[tuple[str, ...]] = []
     for q_class in refinement:
         q_set = set(q_class)
@@ -122,10 +128,10 @@ def completion_operator(
 
 
 def report_factorization_obstruction(
-    spec: ExecutableBandSpec, lens: ReportLens
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
 ) -> tuple[bool, tuple[tuple[str, ...], ...]]:
     exec_spec = as_exec_spec(spec)
-    completion = completion_classes(exec_spec, lens)
+    completion = completion_classes(exec_spec, lens, strict_release=strict_release)
     report_buckets: dict[Any, list[str]] = defaultdict(list)
     for record in exec_spec.audit_universe:
         report_buckets[lens.read(record)].append(record.id)
@@ -136,9 +142,11 @@ def report_factorization_obstruction(
     return completion_set == report_set, separating
 
 
-def completion_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> CompletionCertificate:
+def completion_certificate(
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
+) -> CompletionCertificate:
     exec_spec = as_exec_spec(spec)
-    completion = completion_classes(exec_spec, lens)
+    completion = completion_classes(exec_spec, lens, strict_release=strict_release)
     report_buckets: dict[Any, list[str]] = defaultdict(list)
     for record in exec_spec.audit_universe:
         report_buckets[lens.read(record)].append(record.id)
@@ -148,7 +156,9 @@ def completion_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> Comple
         classes = tuple(cls for cls in completion.classes if set(cls) & set(ids))
         if len(classes) > 1:
             splits.append((repr(report_value), classes))
-    factorization_ok, separating = report_factorization_obstruction(exec_spec, lens)
+    factorization_ok, separating = report_factorization_obstruction(
+        exec_spec, lens, strict_release=strict_release
+    )
     completion_set = {frozenset(cls) for cls in completion.classes}
     covers_universe = (
         set().union(*completion_set) == set(exec_spec.records) if completion_set else False
@@ -171,7 +181,12 @@ def completion_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> Comple
                 len({lens.read(exec_spec.record(record_id)) for record_id in cls}) == 1
                 for cls in completion.classes
             ),
-            "idempotent": completion_operator(exec_spec, lens, completion.classes)
+            "idempotent": completion_operator(
+                exec_spec,
+                lens,
+                completion.classes,
+                strict_release=strict_release,
+            )
             == completion.classes,
             "least_complete_refinement": all(
                 frozenset(cls) <= frozenset(report_fiber)
@@ -185,7 +200,13 @@ def completion_certificate(spec: ExecutableBandSpec, lens: ReportLens) -> Comple
             "report_fibers": [list(fiber) for fiber in report_fibers],
             "observable_table": dict(completion.observable_by_record),
             "idempotent_application": [
-                list(cls) for cls in completion_operator(exec_spec, lens, completion.classes)
+                list(cls)
+                for cls in completion_operator(
+                    exec_spec,
+                    lens,
+                    completion.classes,
+                    strict_release=strict_release,
+                )
             ],
         },
     )
@@ -195,11 +216,13 @@ def completion_universal_property_certificate(
     spec: ExecutableBandSpec,
     lens: ReportLens,
     refinement: tuple[tuple[str, ...], ...] | None = None,
+    *,
+    strict_release: bool = True,
 ) -> CompletionUniversalPropertyCertificate:
     exec_spec = as_exec_spec(spec)
-    cert = completion_certificate(exec_spec, lens)
+    cert = completion_certificate(exec_spec, lens, strict_release=strict_release)
     refinement = refinement or cert.report_fibers
-    completed = completion_operator(exec_spec, lens, refinement)
+    completed = completion_operator(exec_spec, lens, refinement, strict_release=strict_release)
     quotient_map = {}
     for source_class in refinement:
         image = tuple(
@@ -225,9 +248,9 @@ def completion_universal_property_certificate(
 
 
 def completion_law_certificate(
-    spec: ExecutableBandSpec, lens: ReportLens
+    spec: ExecutableBandSpec, lens: ReportLens, *, strict_release: bool = True
 ) -> CompletionLawCertificate:
-    cert = completion_certificate(spec, lens)
+    cert = completion_certificate(spec, lens, strict_release=strict_release)
     return CompletionLawCertificate(
         observable_table={
             record_id: value for record_id, value in cert.completion.observable_by_record.items()

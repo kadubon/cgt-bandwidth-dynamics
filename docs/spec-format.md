@@ -221,9 +221,10 @@ Release checker declarations:
 ```
 
 For backward compatibility, missing `local_stability` predicates default to
-`true` in normal mode. Strict validation rejects defaulted local-stability
-predicates because release descent should be backed by explicit certificate
-data in portable specs.
+`true` only in compatibility construction paths. Strict validation rejects
+defaulted local-stability predicates because release descent should be backed by
+explicit certificate data in portable specs. CLI audit uses strict release
+checking by default; use `--compat-release` only for legacy replay.
 
 Strict release checking also reads `release_check_table.footprint_predicates`,
 `release_check_table.footprint_coordinates`, and
@@ -303,3 +304,5 @@ certificate outputs:
 - `schemas/release-descent-certificate.schema.json` validates the
   `release_action_certificate` section, including release checks, descent
   certificates, and descent proofs.
+- `schemas/conformance-matrix.schema.json` validates
+  `docs/conformance-matrix.json`, the machine-readable theory-to-surface map.
