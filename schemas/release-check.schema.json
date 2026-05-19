@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/release-check.schema.json",
+  "title": "ReleaseCheckResult",
+  "type": "object",
+  "required": ["passed", "trace", "predicate_results", "errors"],
+  "properties": {
+    "passed": {"type": "boolean"},
+    "trace": {"type": "array", "items": {"type": "string"}},
+    "predicate_results": {"type": "object"},
+    "errors": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

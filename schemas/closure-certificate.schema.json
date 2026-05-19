@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/closure-certificate.schema.json",
+  "title": "ClosureCertificate",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "store",
+    "row_results",
+    "steps",
+    "boundary_rows",
+    "rule_table",
+    "accepted_rows",
+    "failure_rows",
+    "candidate_rows",
+    "derived_rows",
+    "fixed_point_reason",
+    "bound_exhaustion_reason"
+  ],
+  "properties": {
+    "schema_version": {"const": "cgt-bandwidth.closure-certificate.v1"},
+    "store": {"type": "object"},
+    "row_results": {"type": "array"},
+    "steps": {"type": "array"},
+    "boundary_rows": {"type": "array", "items": {"type": "string"}},
+    "rule_table": {"type": ["object", "null"]},
+    "accepted_rows": {"type": "array", "items": {"type": "string"}},
+    "failure_rows": {"type": "array", "items": {"type": "string"}},
+    "candidate_rows": {"type": "array", "items": {"type": "string"}},
+    "derived_rows": {"type": "array", "items": {"type": "string"}},
+    "fixed_point_reason": {"type": "string"},
+    "bound_exhaustion_reason": {"type": "string"}
+  },
+  "additionalProperties": false
+}

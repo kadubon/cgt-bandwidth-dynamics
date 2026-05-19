@@ -1,0 +1,11 @@
+{
+  "universe": ["ob_1", "lb_1", "rig_1"],
+  "sets": {
+    "rc_ob": ["ob_1"],
+    "rc_lb": ["lb_1"],
+    "rc_rig": ["rig_1"],
+    "rc_ob_lb": ["ob_1", "lb_1"]
+  },
+  "budget": 2
+}
+

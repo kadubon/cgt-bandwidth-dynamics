@@ -1,0 +1,100 @@
+{
+  "name": "release-deletion-noncommutation",
+  "frame": {
+    "systems": ["blocked", "released", "deleted-first"],
+    "effect_dimensions": ["report", "release"]
+  },
+  "row_schemas": {
+    "witness": {},
+    "diagnostic": {},
+    "release": {}
+  },
+  "candidates": [],
+  "components": [
+    {
+      "name": "Rig",
+      "polarity": "obstruction",
+      "upper": 0,
+      "emit_bound_debt": false
+    }
+  ],
+  "release_check_table": {
+    "obstruction_rows": ["ob_1"],
+    "lower_bound_rows": ["lb_1"],
+    "allowed_new_rows": ["rc_1", "p_1", "ret_1"]
+  },
+  "releases": [
+    {
+      "id": "rc_1",
+      "source": "blocked",
+      "target": "released",
+      "discharges": ["ob_1"],
+      "preserves": ["lb_1", "p_1"],
+      "footprint": ["ob_1", "lb_1", "rc_1", "p_1", "ret_1"],
+      "diagnostic_retyping": ["ret_1"],
+      "discharge_map": {"ob_1": "rc_1"},
+      "preservation_map": {"lb_1": "p_1"},
+      "retyping_map": {"ob_1": "ret_1"}
+    }
+  ],
+  "records": [
+    {
+      "id": "blocked",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "lb_1",
+          "kind": "witness",
+          "sem": "lb_1",
+          "payload": {"debt": true, "debt_atoms": ["lb_1"], "atoms": [{"mode": "diag", "name": "lb_1"}]}
+        },
+        {
+          "rid": "ob_1",
+          "kind": "diagnostic",
+          "sem": "ob_1",
+          "retention": "retained",
+          "payload": {"debt": true, "debt_atoms": ["ob_1"], "atoms": [{"mode": "diag", "name": "ob_1"}]}
+        }
+      ]
+    },
+    {
+      "id": "released",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "rc_1",
+          "kind": "release",
+          "sem": "rc_1",
+          "payload": {"atoms": [{"mode": "rel", "name": "rc_1"}]}
+        },
+        {
+          "rid": "p_1",
+          "kind": "witness",
+          "sem": "p_1",
+          "payload": {"atoms": [{"mode": "floor", "name": "p_1"}]}
+        },
+        {
+          "rid": "ret_1",
+          "kind": "release",
+          "sem": "ret_1",
+          "payload": {"atoms": [{"mode": "rel", "name": "ret_1"}]}
+        }
+      ]
+    },
+    {
+      "id": "deleted-first",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "ob_1",
+          "kind": "diagnostic",
+          "sem": "ob_1",
+          "retention": "retained",
+          "payload": {"debt": true, "debt_atoms": ["ob_1"], "atoms": [{"mode": "diag", "name": "ob_1"}]}
+        }
+      ]
+    }
+  ],
+  "read_coordinates": ["row:ob_1", "row:lb_1", "row:rc_1", "row:p_1", "row:ret_1"],
+  "exact_support_limit": 8
+}

@@ -1,0 +1,52 @@
+{
+  "name": "minimal-report-forgetfulness",
+  "frame": {
+    "systems": ["H0", "H1"],
+    "effect_dimensions": ["report", "rigidity"]
+  },
+  "row_schemas": {
+    "rigidity": {}
+  },
+  "candidates": [],
+  "components": [
+    {
+      "name": "Rig",
+      "polarity": "obstruction",
+      "upper": 0
+    }
+  ],
+  "records": [
+    {
+      "id": "H0",
+      "report": "same",
+      "rows": []
+    },
+    {
+      "id": "H1",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "rig_1",
+          "kind": "rigidity",
+          "sem": "rig_1",
+          "retention": "retained",
+          "payload": {
+            "component_values": {
+              "Rig": 2
+            },
+            "debt": true,
+            "debt_atoms": ["rig_1"],
+            "atoms": [
+              {
+                "mode": "diag",
+                "name": "rig_1"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "read_coordinates": ["row:rig_1"],
+  "exact_support_limit": 4
+}

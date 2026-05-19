@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/wellformedness-report.schema.json",
+  "title": "WellFormednessReport",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "ok",
+    "condition_status",
+    "issues",
+    "checker_results",
+    "problems"
+  ],
+  "properties": {
+    "schema_version": {"const": "cgt-bandwidth.wellformedness.v1"},
+    "ok": {"type": "boolean"},
+    "condition_status": {"type": "object"},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["condition", "status", "message", "severity"],
+        "properties": {
+          "condition": {"type": "string"},
+          "status": {"enum": ["pass", "warning", "fail"]},
+          "message": {"type": "string"},
+          "severity": {"type": "string"},
+          "subject": {"type": "string"},
+          "evidence": {"type": "object"},
+          "witness_rows": {"type": "array", "items": {"type": "string"}},
+          "repair_hint": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "checker_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["condition", "checker", "passed", "issue_count", "severity", "witnesses"],
+        "properties": {
+          "condition": {"type": "string"},
+          "checker": {"type": "string"},
+          "passed": {"type": "boolean"},
+          "issue_count": {"type": "integer", "minimum": 0},
+          "severity": {"type": "string"},
+          "witnesses": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "problems": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

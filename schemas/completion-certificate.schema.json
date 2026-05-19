@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/completion-certificate.schema.json",
+  "title": "CompletionCertificate",
+  "type": "object",
+  "required": [
+    "completion",
+    "report_fibers",
+    "report_fiber_splits",
+    "factorization_ok",
+    "separating_classes",
+    "separation_coordinates",
+    "universal_property_checks",
+    "universal_property_witnesses"
+  ],
+  "properties": {
+    "completion": {"type": "object"},
+    "report_fibers": {"type": "array"},
+    "report_fiber_splits": {"type": "array"},
+    "factorization_ok": {"type": "boolean"},
+    "separating_classes": {"type": "array"},
+    "separation_coordinates": {"type": "array", "items": {"type": "string"}},
+    "universal_property_checks": {"type": "object"},
+    "universal_property_witnesses": {"type": "object"}
+  },
+  "additionalProperties": false
+}

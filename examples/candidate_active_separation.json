@@ -1,0 +1,86 @@
+{
+  "name": "candidate-active-separation",
+  "frame": {
+    "systems": ["H0", "H1"],
+    "effect_dimensions": ["report", "candidate"]
+  },
+  "row_schemas": {
+    "witness": {}
+  },
+  "candidates": ["a", "b"],
+  "candidate_semantics": {"a": "A", "b": "B"},
+  "candidate_evidence": {
+    "a": [
+      {"mode": "avail", "name": "obs"},
+      {"mode": "cmp", "name": "cmp"},
+      {"mode": "floor", "name": "sel_a"}
+    ],
+    "b": [
+      {"mode": "avail", "name": "obs"},
+      {"mode": "cmp", "name": "cmp"},
+      {"mode": "floor", "name": "sel_b"}
+    ]
+  },
+  "stage_checks": {
+    "a": {
+      "presentable": {"required": [{"mode": "avail", "name": "obs"}]},
+      "well_formed": {},
+      "observable": {},
+      "comparable": {"required": [{"mode": "cmp", "name": "cmp"}]},
+      "available": {},
+      "floor_safe": {},
+      "release_safe": {},
+      "selected": {"required": [{"mode": "floor", "name": "sel_a"}]}
+    },
+    "b": {
+      "presentable": {"required": [{"mode": "avail", "name": "obs"}]},
+      "well_formed": {},
+      "observable": {},
+      "comparable": {"required": [{"mode": "cmp", "name": "cmp"}]},
+      "available": {},
+      "floor_safe": {},
+      "release_safe": {},
+      "selected": {"required": [{"mode": "floor", "name": "sel_b"}]}
+    }
+  },
+  "records": [
+    {
+      "id": "H0",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "w_a",
+          "kind": "witness",
+          "sem": "w_a",
+          "payload": {
+            "atoms": [
+              {"mode": "avail", "name": "obs"},
+              {"mode": "cmp", "name": "cmp"},
+              {"mode": "floor", "name": "sel_a"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "H1",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "w_b",
+          "kind": "witness",
+          "sem": "w_b",
+          "payload": {
+            "atoms": [
+              {"mode": "avail", "name": "obs"},
+              {"mode": "cmp", "name": "cmp"},
+              {"mode": "floor", "name": "sel_b"}
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "read_coordinates": ["row:w_a", "row:w_b", "atom:floor:sel_a", "atom:floor:sel_b"],
+  "exact_support_limit": 6
+}

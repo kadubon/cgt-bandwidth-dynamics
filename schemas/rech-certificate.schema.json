@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/rech-certificate.schema.json",
+  "title": "RECHCertificate",
+  "type": "object",
+  "required": [
+    "ok",
+    "rech",
+    "incidence",
+    "typed_nodes",
+    "typed_arcs",
+    "clause_results",
+    "store_preservation"
+  ],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "rech": {"type": "object"},
+    "incidence": {"type": "array"},
+    "typed_nodes": {"type": "array"},
+    "typed_arcs": {"type": "array"},
+    "preservation_problems": {"type": "array", "items": {"type": "string"}},
+    "provenance_paths": {"type": "array"},
+    "retention_paths": {"type": "array"},
+    "discharge_paths": {"type": "array"},
+    "successor_preservation": {"type": "array"},
+    "clause_results": {"type": "array"},
+    "preservation_witnesses": {"type": "array"},
+    "store_preservation": {"type": ["object", "null"]},
+    "mode_separation": {"type": "object"},
+    "store_transformation_audit": {"type": "object"}
+  },
+  "additionalProperties": false
+}

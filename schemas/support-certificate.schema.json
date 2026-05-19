@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/support-certificate.schema.json",
+  "title": "SupportCertificate",
+  "type": "object",
+  "required": ["coordinate_universe", "passed", "results"],
+  "properties": {
+    "coordinate_universe": {"type": "array", "items": {"type": "string"}},
+    "passed": {"type": "boolean"},
+    "results": {"type": "array"}
+  },
+  "additionalProperties": false
+}

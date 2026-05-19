@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/strict-executable-band-spec.schema.json",
+  "title": "StrictExecutableBandSpec",
+  "type": "object",
+  "required": [
+    "records",
+    "rules",
+    "store_step_rules",
+    "mode_matrix",
+    "components",
+    "release_check_table",
+    "read_coordinates",
+    "work_bounds",
+    "audit_scope"
+  ],
+  "properties": {
+    "records": {"type": "array", "minItems": 1},
+    "rules": {"type": "array"},
+    "store_step_rules": {"type": "array"},
+    "mode_matrix": {
+      "type": "object",
+      "minProperties": 36,
+      "patternProperties": {
+        "^(floor|diag|rel|cmp|avail|prov)->(floor|diag|rel|cmp|avail|prov)$": {
+          "type": "object",
+          "required": ["allowed"],
+          "properties": {
+            "allowed": {"type": "boolean"},
+            "requires_release": {"type": "boolean"},
+            "requires_retyping": {"type": "boolean"},
+            "required_modes": {
+              "type": "array",
+              "items": {"enum": ["floor", "diag", "rel", "cmp", "avail", "prov"]}
+            },
+            "release_atoms": {"type": "array", "items": {"type": "string"}},
+            "retyping_atoms": {"type": "array", "items": {"type": "string"}}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "aggregator"],
+        "properties": {
+          "name": {"type": "string"},
+          "aggregator": {
+            "type": "string",
+            "pattern": "^(lookup|graph_count|graph_reachability|graph_cut)$"
+          },
+          "carrier": {"type": "array"},
+          "eval_table": {"type": "object"},
+          "low_debt_table": {"type": "object"},
+          "up_debt_table": {"type": "object"},
+          "support_table": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "read_coordinates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "pattern": "^(row:[^:]+|atom:[^:]+:[^:]+)$"}
+    },
+    "work_bounds": {"type": "object"},
+    "audit_scope": {"type": "object"},
+    "release_check_table": {
+      "type": "object",
+      "properties": {
+        "footprint_predicates": {"type": "object"},
+        "footprint_coordinates": {"type": "object"},
+        "predicate_coordinates": {"type": "object"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/executable-band-spec.schema.json",
+  "title": "ExecutableBandSpec",
+  "type": "object",
+  "required": ["records"],
+  "properties": {
+    "name": {"type": "string"},
+    "frame": {"type": "object"},
+    "row_schemas": {"type": "object"},
+    "candidates": {"type": "array", "items": {"type": "string"}},
+    "rules": {"type": "array"},
+    "store_step_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string"},
+          "premise_rows": {"type": "array", "items": {"type": "string"}},
+          "premise_kinds": {"type": "array", "items": {"type": "string"}},
+          "premise_atoms": {"type": "array"},
+          "emits": {"type": "array"},
+          "origin": {"type": "string"},
+          "prov_path": {"type": "array", "items": {"type": "string"}},
+          "non_synthetic": {"type": "boolean"},
+          "max_applications": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": true
+      }
+    },
+    "rule_table_declared": {"type": "boolean"},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string"},
+          "report": {},
+          "rows": {"type": "array"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "read_coordinates": {"type": "array", "items": {"type": "string"}},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "polarity": {"type": "string"},
+          "variance": {"type": "string"},
+          "aggregator": {"type": "string"},
+          "carrier": {"type": "array"},
+          "bottom": {},
+          "default": {},
+          "preorder": {"type": "array"},
+          "eval_table": {"type": "object"},
+          "low_debt_table": {"type": "object"},
+          "up_debt_table": {"type": "object"},
+          "support_table": {"type": "object"},
+          "support_atoms": {"type": "array", "items": {"type": "string"}},
+          "input_kinds": {"type": "array", "items": {"type": "string"}},
+          "read_modes": {"type": "array", "items": {"type": "string"}},
+          "read_atoms": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "mode_matrix": {"type": "object"},
+    "release_check_table": {
+      "type": "object",
+      "properties": {
+        "obstruction_rows": {"type": "array", "items": {"type": "string"}},
+        "lower_bound_rows": {"type": "array", "items": {"type": "string"}},
+        "allowed_new_rows": {"type": "array", "items": {"type": "string"}},
+        "footprint_predicates": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {"type": "boolean"}
+          }
+        },
+        "footprint_coordinates": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        },
+        "predicate_coordinates": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "exact_support_limit": {"type": "integer", "minimum": 1}
+  },
+  "additionalProperties": true
+}

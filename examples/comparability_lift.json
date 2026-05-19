@@ -1,0 +1,64 @@
+{
+  "name": "comparability-lift",
+  "frame": {
+    "systems": ["before", "after"],
+    "effect_dimensions": ["report", "comparison"]
+  },
+  "row_schemas": {
+    "comparison": {}
+  },
+  "candidates": ["a"],
+  "candidate_semantics": {"a": "A"},
+  "candidate_evidence": {
+    "a": [
+      {"mode": "avail", "name": "obs"},
+      {"mode": "cmp", "name": "cmp_a"}
+    ]
+  },
+  "stage_checks": {
+    "a": {
+      "presentable": {"required": [{"mode": "avail", "name": "obs"}]},
+      "well_formed": {},
+      "observable": {},
+      "comparable": {"required": [{"mode": "cmp", "name": "cmp_a"}]},
+      "available": {},
+      "floor_safe": {},
+      "release_safe": {},
+      "selected": {}
+    }
+  },
+  "records": [
+    {
+      "id": "before",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "obs",
+          "kind": "comparison",
+          "sem": "obs",
+          "payload": {"atoms": [{"mode": "avail", "name": "obs"}]}
+        }
+      ]
+    },
+    {
+      "id": "after",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "obs",
+          "kind": "comparison",
+          "sem": "obs",
+          "payload": {"atoms": [{"mode": "avail", "name": "obs"}]}
+        },
+        {
+          "rid": "cmp_a",
+          "kind": "comparison",
+          "sem": "cmp_a",
+          "payload": {"atoms": [{"mode": "cmp", "name": "cmp_a"}]}
+        }
+      ]
+    }
+  ],
+  "read_coordinates": ["row:obs", "row:cmp_a", "atom:cmp:cmp_a"],
+  "exact_support_limit": 5
+}

@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.coverage
+htmlcov/
+
+# Builds and packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# uv and virtual environments
+.venv/
+
+# Local/editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and local outputs
+*.log
+*.tmp
+*.bak
+audit-output/
+coverage.xml
+
+# Secrets/configuration that must not be published
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt

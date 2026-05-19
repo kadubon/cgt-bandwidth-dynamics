@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/component-law-certificate.schema.json",
+  "title": "ComponentLawCertificate",
+  "type": "object",
+  "required": ["component", "passed", "law_results", "problems", "warnings"],
+  "properties": {
+    "component": {"type": "string"},
+    "passed": {"type": "boolean"},
+    "law_results": {"type": "object"},
+    "problems": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,128 @@
+{
+  "name": "strict-minimal-conformance",
+  "frame": {
+    "systems": ["H0", "H1"],
+    "effect_dimensions": ["report", "rigidity"]
+  },
+  "row_schemas": {
+    "rigidity": {}
+  },
+  "candidates": [],
+  "rules": [],
+  "store_step_rules": [],
+  "mode_matrix": {
+    "floor->floor": {"allowed": true},
+    "floor->diag": {"allowed": false},
+    "floor->rel": {"allowed": false},
+    "floor->cmp": {"allowed": false},
+    "floor->avail": {"allowed": false},
+    "floor->prov": {"allowed": false},
+    "diag->floor": {"allowed": false},
+    "diag->diag": {"allowed": true},
+    "diag->rel": {"allowed": false},
+    "diag->cmp": {"allowed": false},
+    "diag->avail": {"allowed": false},
+    "diag->prov": {"allowed": false},
+    "rel->floor": {"allowed": false},
+    "rel->diag": {"allowed": false},
+    "rel->rel": {"allowed": true},
+    "rel->cmp": {"allowed": false},
+    "rel->avail": {"allowed": false},
+    "rel->prov": {"allowed": false},
+    "cmp->floor": {"allowed": false},
+    "cmp->diag": {"allowed": false},
+    "cmp->rel": {"allowed": false},
+    "cmp->cmp": {"allowed": true},
+    "cmp->avail": {"allowed": false},
+    "cmp->prov": {"allowed": false},
+    "avail->floor": {"allowed": false},
+    "avail->diag": {"allowed": false},
+    "avail->rel": {"allowed": false},
+    "avail->cmp": {"allowed": false},
+    "avail->avail": {"allowed": true},
+    "avail->prov": {"allowed": false},
+    "prov->floor": {"allowed": false},
+    "prov->diag": {"allowed": false},
+    "prov->rel": {"allowed": false},
+    "prov->cmp": {"allowed": false},
+    "prov->avail": {"allowed": false},
+    "prov->prov": {"allowed": true}
+  },
+  "components": [
+    {
+      "name": "Rig",
+      "polarity": "obstruction",
+      "aggregator": "lookup",
+      "carrier": [0, 2],
+      "bottom": 0,
+      "default": 0,
+      "preorder": [[0, 0], [2, 2]],
+      "upper": 2,
+      "eval_table": {
+        "rig-key": 2
+      },
+      "low_debt_table": {
+        "0": [],
+        "2": []
+      },
+      "up_debt_table": {
+        "0": [],
+        "2": []
+      },
+      "support_table": {
+        "0": ["row:rig_1"],
+        "2": ["row:rig_1"]
+      },
+      "support_atoms": ["row:rig_1"]
+    }
+  ],
+  "release_check_table": {},
+  "records": [
+    {
+      "id": "H0",
+      "report": "same",
+      "rows": []
+    },
+    {
+      "id": "H1",
+      "report": "same",
+      "rows": [
+        {
+          "rid": "rig_1",
+          "kind": "rigidity",
+          "sem": "rig_1",
+          "retention": "retained",
+          "payload": {
+            "component_lookup": {
+              "Rig": "rig-key"
+            },
+            "debt": true,
+            "debt_atoms": ["rig_1"],
+            "atoms": [
+              {
+                "mode": "diag",
+                "name": "rig_1"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "read_coordinates": ["row:rig_1"],
+  "work_bounds": {
+    "closure_steps": 256,
+    "candidate_rows": 256,
+    "trace_depth": 64,
+    "branch_depth": 64,
+    "snapshot_depth": 64,
+    "component_evals": 1024,
+    "support_subsets": 4096,
+    "release_checks": 1024,
+    "quotient_classes": 1024
+  },
+  "audit_scope": {
+    "whole_domain": true
+  },
+  "exact_support_limit": 4
+}

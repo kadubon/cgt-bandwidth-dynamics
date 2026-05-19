@@ -1,0 +1,228 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Ruff check
+        run: uv run ruff check src tests scripts
+
+      - name: Ruff format check
+        run: uv run ruff format --check src tests scripts
+
+      - name: Mypy
+        run: uv run mypy src/cgt_bandwidth
+
+      - name: Tests
+        run: uv run pytest --cov=cgt_bandwidth --cov-report=term-missing --cov-fail-under=94
+
+      - name: Validate JSON schemas
+        run: |
+          uv run python - <<'PY'
+          import json
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          import jsonschema
+          from cgt_bandwidth.components import component_law_certificate
+          from cgt_bandwidth.completion import completion_certificate
+          from cgt_bandwidth.core import ReportLens
+          from cgt_bandwidth.evidence import evidence_audit
+          from cgt_bandwidth.io import load_spec
+          from cgt_bandwidth.microframe import build_microframe_spec
+          from cgt_bandwidth.rech import build_rech_certificate
+          from cgt_bandwidth.release import check_release
+          from cgt_bandwidth.support import support_table_certificate
+
+          spec_schema = json.loads(Path("schemas/executable-band-spec.schema.json").read_text())
+          for path in Path("examples").glob("*.json"):
+              if path.name == "release_cover.json":
+                  continue
+              jsonschema.validate(json.loads(path.read_text()), spec_schema)
+          strict_schema = json.loads(Path("schemas/strict-executable-band-spec.schema.json").read_text())
+          jsonschema.validate(json.loads(Path("examples/strict_minimal_spec.json").read_text()), strict_schema)
+
+          report_schema = json.loads(Path("schemas/wellformedness-report.schema.json").read_text())
+          result = subprocess.run(
+              [
+                  sys.executable,
+                  "-m",
+                  "cgt_bandwidth.cli",
+                  "validate",
+                  "examples/minimal_spec.json",
+                  "--report",
+              ],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          jsonschema.validate(json.loads(result.stdout), report_schema)
+
+          audit_schema = json.loads(Path("schemas/audit-report.schema.json").read_text())
+          audit = subprocess.run(
+              [
+                  sys.executable,
+                  "-m",
+                  "cgt_bandwidth.cli",
+                  "audit",
+                  "examples/minimal_spec.json",
+                  "--lens",
+                  "report",
+                  "--exact-support",
+              ],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          jsonschema.validate(json.loads(audit.stdout), audit_schema)
+
+          closure_schema = json.loads(Path("schemas/closure-certificate.schema.json").read_text())
+          closure = subprocess.run(
+              [
+                  sys.executable,
+                  "-m",
+                  "cgt_bandwidth.cli",
+                  "close",
+                  "examples/minimal_spec.json",
+                  "H0",
+                  "--certificate",
+              ],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          jsonschema.validate(json.loads(closure.stdout), closure_schema)
+
+          release_schema = json.loads(Path("schemas/release-descent-certificate.schema.json").read_text())
+          release_payload = json.loads(audit.stdout)["release_action_certificate"]
+          jsonschema.validate(release_payload, release_schema)
+
+          strict_spec = load_spec("examples/strict_minimal_spec.json")
+          lens = ReportLens("report")
+          jsonschema.validate(
+              evidence_audit(strict_spec, set(), strict=True).to_dict(),
+              json.loads(Path("schemas/evidence-audit.schema.json").read_text()),
+          )
+          jsonschema.validate(
+              build_rech_certificate(strict_spec, "H0").to_dict(),
+              json.loads(Path("schemas/rech-certificate.schema.json").read_text()),
+          )
+          jsonschema.validate(
+              support_table_certificate(strict_spec, lens).to_dict(),
+              json.loads(Path("schemas/support-certificate.schema.json").read_text()),
+          )
+          jsonschema.validate(
+              completion_certificate(strict_spec, lens).to_dict(),
+              json.loads(Path("schemas/completion-certificate.schema.json").read_text()),
+          )
+          microframe = build_microframe_spec()
+          jsonschema.validate(
+              component_law_certificate(microframe.components[0]).to_dict(),
+              json.loads(Path("schemas/component-law-certificate.schema.json").read_text()),
+          )
+          jsonschema.validate(
+              check_release(microframe, microframe.releases[0]).to_dict(),
+              json.loads(Path("schemas/release-check.schema.json").read_text()),
+          )
+          PY
+
+      - name: CLI smoke
+        run: |
+          uv run python -m cgt_bandwidth.cli validate examples/minimal_spec.json
+          uv run python -m cgt_bandwidth.cli validate examples/minimal_spec.json --report
+          uv run python -m cgt_bandwidth.cli validate examples/strict_minimal_spec.json --report --strict
+          uv run python -m cgt_bandwidth.cli normalize-strict examples/minimal_spec.json
+          uv run python -m cgt_bandwidth.cli close examples/minimal_spec.json H0 --certificate
+          uv run python -m cgt_bandwidth.cli close examples/strict_minimal_spec.json H0 --certificate --strict
+          uv run python -m cgt_bandwidth.cli audit examples/minimal_spec.json --lens report --exact-support
+          uv run python -m cgt_bandwidth.cli microframe run
+          uv run python -m cgt_bandwidth.cli release-cover examples/release_cover.json --exact
+
+      - name: Publication audit before build
+        run: uv run python scripts/publication_audit.py --skip-worktree-artifacts
+
+      - name: Build package
+        run: uv build
+
+      - name: Check package metadata
+        run: uv run twine check dist/*
+
+      - name: Publication audit package
+        run: uv run python scripts/publication_audit.py --package dist --skip-worktree-artifacts
+
+      - name: Check package contents
+        run: |
+          python - <<'PY'
+          import tarfile
+          import zipfile
+          from pathlib import Path
+
+          forbidden = (".venv", "__pycache__", ".pytest_cache", ".env", "dist/")
+          for path in Path("dist").glob("cgt_bandwidth-*"):
+              if path.name.endswith(".whl"):
+                  with zipfile.ZipFile(path) as archive:
+                      names = archive.namelist()
+              elif path.name.endswith(".tar.gz"):
+                  with tarfile.open(path, "r:gz") as archive:
+                      names = archive.getnames()
+              else:
+                  continue
+              bad = [name for name in names if any(part in name for part in forbidden)]
+              if bad:
+                  raise SystemExit(f"{path.name} contains forbidden entries: {bad[:10]}")
+          PY
+
+  windows-smoke:
+    name: Windows Python 3.13 smoke
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Tests
+        run: uv run pytest
+
+      - name: CLI smoke
+        run: |
+          uv run python -m cgt_bandwidth.cli validate examples/minimal_spec.json
+          uv run python -m cgt_bandwidth.cli validate examples/strict_minimal_spec.json --report --strict
+          uv run python -m cgt_bandwidth.cli normalize-strict examples/minimal_spec.json
+          uv run python -m cgt_bandwidth.cli microframe run

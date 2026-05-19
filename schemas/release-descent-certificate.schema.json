@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cgt-bandwidth/release-descent-certificate.schema.json",
+  "title": "ReleaseActionCertificate",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "relation",
+    "accepted_certificates",
+    "skipped_certificates",
+    "check_results",
+    "descent_certificates",
+    "descent_proofs"
+  ],
+  "properties": {
+    "schema_version": {"const": "cgt-bandwidth.release-descent.v1"},
+    "relation": {"type": "object"},
+    "accepted_certificates": {"type": "array", "items": {"type": "string"}},
+    "skipped_certificates": {"type": "object"},
+    "check_results": {"type": "object"},
+    "descent_certificates": {"type": "object"},
+    "descent_proofs": {"type": "object"}
+  },
+  "additionalProperties": false
+}
